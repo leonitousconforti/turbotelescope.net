@@ -2,6 +2,7 @@ node_modules
 **/__pycache__
 **/build/**
 **/dist/**
+.next
 
 *.reg
 *.fits
