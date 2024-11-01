@@ -22,7 +22,7 @@ export const PgLive: Layer.Layer<
     PgClient.PgClient | SqlClient.SqlClient,
     ConfigError.ConfigError | SqlError.SqlError,
     never
-> = PgClient.layer({
+> = PgClient.layerConfig({
     port: Config.number("DB_PORT").pipe(Config.orElse(() => Config.succeed(5432))),
     host: Config.string("DB_HOST").pipe(Config.orElse(() => Config.succeed("popcorn.spa.umn.edu"))),
     database: Config.string("DB_NAME").pipe(Config.orElse(() => Config.succeed("turbo"))),
