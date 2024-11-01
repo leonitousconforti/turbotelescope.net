@@ -1,15 +1,6 @@
-node_modules
-**/__pycache__
-**/build/**
-**/dist/**
 .next
-
-*.reg
-*.fits
-*.psf*
-*.out
-*.pyc
-*.egg-info
+node_modules
 
 .DS_Store
 next-env.d.ts
+tsconfig.tsbuildinfo
