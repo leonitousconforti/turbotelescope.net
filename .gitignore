@@ -2,6 +2,7 @@ node_modules
 **/__pycache__
 **/build/**
 **/dist/**
+.next
 
 *.reg
 *.fits
@@ -11,3 +12,4 @@ node_modules
 *.egg-info
 
 .DS_Store
+next-env.d.ts
