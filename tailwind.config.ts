@@ -5,7 +5,15 @@ import tailwindAnimate from "tailwindcss-animate";
 
 const config: Config = {
     darkMode: ["class"],
-    content: ["./src/**/*.{js,ts,jsx,tsx,mdx}"],
+    content: [
+        "./app/**/*.{js,ts,jsx,tsx,mdx}",
+        "./assets/**/*.{js,ts,jsx,tsx,mdx}",
+        "./lib/**/*.{js,ts,jsx,tsx,mdx}",
+        "./pages/**/*.{js,ts,jsx,tsx,mdx}",
+        "./rpc/**/*.{js,ts,jsx,tsx,mdx}",
+        "./styles/**/*.{js,ts,jsx,tsx,mdx}",
+        "./components/**/*.{js,ts,jsx,tsx,mdx}",
+    ],
     theme: {
         container: {
             center: true,

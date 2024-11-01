@@ -1,6 +1,6 @@
 import { MetadataRoute } from "next";
 
-const basePath = "https://popcorn.spa.umn.edu";
+const basePath = "https://turbotelescope.net";
 
 export default function sitemap(): MetadataRoute.Sitemap {
     return [
