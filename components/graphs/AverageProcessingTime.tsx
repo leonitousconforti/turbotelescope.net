@@ -28,7 +28,7 @@ export function AverageProcessingTime() {
             fetchTimeSeriesData({ from, until });
             fetchDataIn({ from, until });
         }
-    }, [from, until]);
+    }, [from, until, fetchDataIn, fetchTimeSeriesData]);
 
     if (!from || !until) {
         return (
