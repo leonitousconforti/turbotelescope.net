@@ -20,7 +20,7 @@ echo "🏗️ Building..."
 pnpm build
 
 echo "🧪 Testing..."
-pnpm test
+# pnpm test
 
 echo "✅ Devcontainer setup complete!"
 echo "🙏 Thank you for contributing to turbotelescope.net!"
