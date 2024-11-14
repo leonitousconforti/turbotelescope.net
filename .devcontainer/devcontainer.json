@@ -1,17 +1,16 @@
 // spell-checker: disable
 {
+    "service": "app",
     "name": "turbotelescope.net",
-    "image": "mcr.microsoft.com/devcontainers/base:bullseye",
+    "dockerComposeFile": "docker-compose.yml",
+    "workspaceFolder": "/workspaces/${localWorkspaceFolderBasename}",
 
     "features": {
         "ghcr.io/devcontainers/features/git:1": {},
         "ghcr.io/devcontainers/features/node:1": {},
         "ghcr.io/devcontainers/features/github-cli:1": {},
-        "ghcr.io/devcontainers/features/common-utils:2": {},
-        "ghcr.io/devcontainers/features/docker-outside-of-docker:1": {}
+        "ghcr.io/devcontainers/features/common-utils:2": {}
     },
-
-    "runArgs": ["--add-host=host.docker.internal:host-gateway"],
 
     "customizations": {
         "vscode": {
@@ -26,8 +25,7 @@
                 "mutantdino.resourcemonitor",
                 "GitHub.vscode-github-actions",
                 "yoavbls.pretty-ts-errors",
-                "effectful-tech.effect-vscode",
-                "tomoki1207.pdf"
+                "effectful-tech.effect-vscode"
             ],
             "settings": {
                 "cSpell.enabled": true,

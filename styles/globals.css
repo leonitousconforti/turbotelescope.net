@@ -1,0 +1,103 @@
+@import url("./hljs.css");
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #ffffff;
+    --foreground: #1e1e1e;
+    --card: #ffffff;
+    --card-foreground: #1e1e1e;
+    --popover: #ffffff;
+    --popover-foreground: #1e1e1e;
+    --primary: #1a1a3c;
+    --primary-foreground: #f2f2f2;
+    --secondary: #f0f0f5;
+    --secondary-foreground: #1a1a3c;
+    --muted: #f0f0f5;
+    --muted-foreground: #605f7f;
+    --accent: #f0f0f5;
+    --accent-foreground: #1a1a3c;
+    --destructive: #d23232;
+    --destructive-foreground: #f2f2f2;
+    --border: #b3b3cc;
+    --input: #b3b3cc;
+    --ring: #1e1e1e;
+    --chart-1: #ff4d4d;
+    --chart-2: #2cae64;
+    --chart-3: #9f5f3b;
+    --chart-4: #f4b842;
+    --chart-5: #f4a340;
+    --radius: 0.5rem;
+    --header-background-light: #f2f2f2;
+    --header-background-dark: #151515;
+  }
+  .dark {
+    --background: #1e1e1e;
+    --foreground: #f2f2f2;
+    --card: #1e1e1e;
+    --card-foreground: #f2f2f2;
+    --popover: #1e1e1e;
+    --popover-foreground: #f2f2f2;
+    --primary: #f2f2f2;
+    --primary-foreground: #1a1a3c;
+    --secondary: #2d2d4d;
+    --secondary-foreground: #f2f2f2;
+    --muted: #2d2d4d;
+    --muted-foreground: #9a97c4;
+    --accent: #2d2d4d;
+    --accent-foreground: #f2f2f2;
+    --destructive: #b82a2a;
+    --destructive-foreground: #e1e1e1;
+    --border: #2d2d4d;
+    --input: #2d2d4d;
+    --ring: #d1d1e0;
+    --chart-1: #4d4dff;
+    --chart-2: #4da040;
+    --chart-3: #e68a3f;
+    --chart-4: #a63d87;
+    --chart-5: #e91e63;
+    --header-background-light: #151515;
+    --header-background-dark: #f2f2f2;
+
+  }
+}
+
+@layer base {
+  * {
+    @apply border-border;
+  }
+  body {
+    @apply bg-background text-foreground;
+    font-feature-settings:
+      "rlig" 1,
+      "calt" 1;
+  }
+}
+
+@keyframes scroll {
+  0% {
+    transform: translateX(calc(-480px * 4));
+  }
+  100% {
+    transform: translateX(calc(-480px * 8));
+  }
+}
+
+.dark {
+  color-scheme: dark;
+}
+
+body.no-scroll {
+  @apply fixed w-full h-full overflow-hidden;
+}
+
+.hide-scrollbar {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+.hide-scrollbar::-webkit-scrollbar {
+  display: none;
+}

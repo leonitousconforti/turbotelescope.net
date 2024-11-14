@@ -1,13 +1,12 @@
+.next
+.vercel
 node_modules
-**/__pycache__
-**/build/**
-**/dist/**
 
-*.reg
-*.fits
-*.psf*
-*.out
-*.pyc
-*.egg-info
+.env.*
+!.env.sample
+!.env.staging
+!.env.development
 
 .DS_Store
+next-env.d.ts
+tsconfig.tsbuildinfo
