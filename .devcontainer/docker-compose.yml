@@ -1,0 +1,29 @@
+services:
+  app:
+    image: "mcr.microsoft.com/devcontainers/base:bullseye"
+    command: sleep infinity
+    volumes:
+      - ../..:/workspaces:cached
+
+  # https://vercel.com/docs/storage/vercel-postgres/local-development
+  postgres:
+    image: postgres:latest
+    restart: unless-stopped
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    environment:
+      POSTGRES_DB: turbo
+      POSTGRES_USER: postgres
+      POSTGRES_PASSWORD: password
+  pg_proxy:
+    image: ghcr.io/neondatabase/wsproxy:latest
+    restart: unless-stopped
+    environment:
+      LOG_TRAFFIC: 'true'
+      ALLOW_ADDR_REGEX: '.*'
+      APPEND_PORT: 'postgres:5432'
+    depends_on:
+      - postgres
+
+volumes:
+  postgres-data:
