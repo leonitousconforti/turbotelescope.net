@@ -146,6 +146,8 @@ export const timeSeriesGroupedRx: Rx.RxResultFn<
             threshold: number;
             avgFailTime: number;
             avgSuccessTime: number;
+            numberFailedRuns: number;
+            numberSuccessfulRuns: number;
             entries: Array<ResultRow>;
         }
     >,
@@ -161,6 +163,8 @@ export const timeSeriesGroupedRx: Rx.RxResultFn<
                 threshold: number;
                 avgFailTime: number;
                 avgSuccessTime: number;
+                numberFailedRuns: number;
+                numberSuccessfulRuns: number;
                 entries: Array<ResultRow>;
             }
         >,
@@ -205,6 +209,8 @@ export const timeSeriesGroupedRx: Rx.RxResultFn<
                     avgSuccessTime,
                     threshold: 30,
                     entries: group,
+                    numberFailedRuns: failures.length,
+                    numberSuccessfulRuns: successes.length,
                 };
             });
 
@@ -212,6 +218,8 @@ export const timeSeriesGroupedRx: Rx.RxResultFn<
                 threshold: 30,
                 avgFailTime: 0,
                 avgSuccessTime: 0,
+                numberFailedRuns: 0,
+                numberSuccessfulRuns: 0,
                 entries: Array.empty<ResultRow>(),
             };
 
