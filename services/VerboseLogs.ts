@@ -3,8 +3,8 @@ import { Effect, Function } from "effect";
 
 import { SchemaName, splitLiteral, tail } from "@/services/Domain";
 
-const popcornServer = "http://97.116.68.150:54321";
-const tlenaiiServer = "http://97.116.68.150:54322";
+const popcornServer = "http://popcorn-logs.turbotelescope.net:54321";
+const tlenaiiServer = "http://tlenaii-logs.turbotelescope.net:54322";
 
 const make = Effect.gen(function* () {
     const client = yield* HttpClient.HttpClient;
