@@ -48,9 +48,17 @@ export const localeRx = Rx.fn<string, never, DateTime.TimeZone>(
 
 // fromRx tracks the start of the time range that the user has selected
 export const fromRx = Rx.fn<Date, never, DateTime.Utc>(
-    (date: Date, _ctx: Rx.Context): Effect.Effect<DateTime.Utc, never, never> =>
-        Function.pipe(
-            DateTime.make(date),
+    (date: Date, ctx: Rx.Context): Effect.Effect<DateTime.Utc, never, never> =>
+        Effect.Do.pipe(
+            Effect.bind("locale", () => ctx.result(localeRx)),
+            Effect.bind("date", () => Effect.succeed(date)),
+            Effect.flatMap(({ date, locale }) =>
+                DateTime.makeZoned(date, {
+                    timeZone: locale,
+                    adjustForTimeZone: true,
+                })
+            ),
+            Effect.map(Function.compose(DateTime.toEpochMillis, DateTime.unsafeMake)),
             Effect.catchAll(() => new Cause.IllegalArgumentException("Invalid date")),
             Effect.tap(Effect.logDebug),
             Effect.orDie
@@ -66,9 +74,17 @@ export const fromRx = Rx.fn<Date, never, DateTime.Utc>(
 
 // untilRx tracks the end of the time range that the user has selected
 export const untilRx = Rx.fn<Date, never, DateTime.Utc>(
-    (date: Date, _ctx: Rx.Context): Effect.Effect<DateTime.Utc, never, never> =>
-        Function.pipe(
-            DateTime.make(date),
+    (date: Date, ctx: Rx.Context): Effect.Effect<DateTime.Utc, never, never> =>
+        Effect.Do.pipe(
+            Effect.bind("locale", () => ctx.result(localeRx)),
+            Effect.bind("date", () => Effect.succeed(date)),
+            Effect.flatMap(({ date, locale }) =>
+                DateTime.makeZoned(date, {
+                    timeZone: locale,
+                    adjustForTimeZone: true,
+                })
+            ),
+            Effect.map(Function.compose(DateTime.toEpochMillis, DateTime.unsafeMake)),
             Effect.catchAll(() => new Cause.IllegalArgumentException("Invalid date")),
             Effect.tap(Effect.logDebug),
             Effect.orDie
