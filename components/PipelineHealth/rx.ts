@@ -47,8 +47,8 @@ export const localeRx = Rx.fn<string, never, DateTime.TimeZone>(
 );
 
 // fromRx tracks the start of the time range that the user has selected
-export const fromRx = Rx.fn<Date, never, DateTime.Utc>(
-    (date: Date, ctx: Rx.Context): Effect.Effect<DateTime.Utc, never, never> =>
+export const fromRx = Rx.fn<Date, never, DateTime.Zoned>(
+    (date: Date, ctx: Rx.Context): Effect.Effect<DateTime.Zoned, never, never> =>
         Effect.Do.pipe(
             Effect.bind("locale", () => ctx.result(localeRx)),
             Effect.bind("date", () => Effect.succeed(date)),
@@ -58,23 +58,24 @@ export const fromRx = Rx.fn<Date, never, DateTime.Utc>(
                     adjustForTimeZone: true,
                 })
             ),
-            Effect.map(Function.compose(DateTime.toEpochMillis, DateTime.unsafeMake)),
+            //Effect.map(Function.compose(DateTime.toEpochMillis, DateTime.unsafeMake)),
             Effect.catchAll(() => new Cause.IllegalArgumentException("Invalid date")),
             Effect.tap(Effect.logDebug),
             Effect.orDie
         ),
     {
         initialValue: Function.pipe(
-            DateTime.now,
+            DateTime.nowInCurrentZone,
             Effect.map(DateTime.subtractDuration(Duration.weeks(2))),
+            DateTime.withCurrentZoneLocal,
             Effect.runSync
         ),
     }
 );
 
 // untilRx tracks the end of the time range that the user has selected
-export const untilRx = Rx.fn<Date, never, DateTime.Utc>(
-    (date: Date, ctx: Rx.Context): Effect.Effect<DateTime.Utc, never, never> =>
+export const untilRx = Rx.fn<Date, never, DateTime.Zoned>(
+    (date: Date, ctx: Rx.Context): Effect.Effect<DateTime.Zoned, never, never> =>
         Effect.Do.pipe(
             Effect.bind("locale", () => ctx.result(localeRx)),
             Effect.bind("date", () => Effect.succeed(date)),
@@ -84,15 +85,16 @@ export const untilRx = Rx.fn<Date, never, DateTime.Utc>(
                     adjustForTimeZone: true,
                 })
             ),
-            Effect.map(Function.compose(DateTime.toEpochMillis, DateTime.unsafeMake)),
+            //Effect.map(Function.compose(DateTime.toEpochMillis, DateTime.unsafeMake)),
             Effect.catchAll(() => new Cause.IllegalArgumentException("Invalid date")),
             Effect.tap(Effect.logDebug),
             Effect.orDie
         ),
     {
         initialValue: Function.pipe(
-            DateTime.now,
+            DateTime.nowInCurrentZone,
             Effect.map(DateTime.subtractDuration(Duration.millis(0))),
+            DateTime.withCurrentZoneLocal,
             Effect.runSync
         ),
     }
@@ -115,6 +117,7 @@ export const aggregateByRx = Rx.make<Exclude<DateTime.DateTime.UnitPlural, "mill
 // ------------------------------------------------------------
 
 // Fetches all the rows from the database in the time range
+const Zone2Utc = Function.compose(DateTime.toEpochMillis, DateTime.unsafeMake);
 export const rowsRx: Rx.RxResultFn<void, Array<ResultRow>, never> = runtime.fn(
     (
         _: void,
@@ -123,7 +126,9 @@ export const rowsRx: Rx.RxResultFn<void, Array<ResultRow>, never> = runtime.fn(
         Effect.Do.pipe(
             Effect.bind("from", () => ctx.result(fromRx)),
             Effect.bind("until", () => ctx.result(untilRx)),
-            Effect.bind("request", ({ from, until }) => Effect.succeed(new RunsInTimeRangeRequest({ from, until }))),
+            Effect.bind("request", ({ from, until }) =>
+                Effect.succeed(new RunsInTimeRangeRequest({ from: Zone2Utc(from), until: Zone2Utc(until) }))
+            ),
             Effect.bind("client", () => rpcClient),
             Effect.flatMap(({ client, request }) => client(request)),
             Effect.map(Record.values),
@@ -196,7 +201,7 @@ export const timeSeriesGroupedRx: Rx.RxResultFn<
 
             const zeroOutParts: (
                 u: Exclude<DateTime.DateTime.UnitPlural, "millis">
-            ) => (d: DateTime.Utc) => DateTime.Utc = Function.pipe(
+            ) => (d: DateTime.DateTime) => DateTime.DateTime = Function.pipe(
                 Match.type<Exclude<DateTime.DateTime.UnitPlural, "millis">>(),
                 Match.when("seconds", () => DateTime.setPartsUtc({ millis: 0 })),
                 Match.when("minutes", () => DateTime.setPartsUtc({ millis: 0, seconds: 0 })),

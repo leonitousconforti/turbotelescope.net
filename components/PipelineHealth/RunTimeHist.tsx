@@ -96,7 +96,7 @@ export function AverageProcessingTimeLineChart() {
             })
         )
     );
-
+    //console.log(chartData);
     const activeChartKey = activeChart === "success" ? chart2 : chart3;
     // Chart implementation
     return (
@@ -179,8 +179,18 @@ export function AverageProcessingTimeLineChart() {
                         />
                         <Legend
                             payload={[
-                                { id: activeChartKey, type: "square", value: chartConfigs[activeChartKey].label, color: chartConfigs[activeChartKey].color, },
-                                { id: chart1, type: "line", value: chartConfigs[chart1].label, color: chartConfigs[chart1].color, },
+                                {
+                                    id: activeChartKey,
+                                    type: "square",
+                                    value: chartConfigs[activeChartKey].label,
+                                    color: chartConfigs[activeChartKey].color,
+                                },
+                                {
+                                    id: chart1,
+                                    type: "line",
+                                    value: chartConfigs[chart1].label,
+                                    color: chartConfigs[chart1].color,
+                                },
                             ]}
                             verticalAlign="top"
                             align="left"

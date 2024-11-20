@@ -27,6 +27,8 @@ export function PipelineHealth() {
 
     // Suspenses
     const totals = useRxSuspenseSuccess(totalsRx).value;
+    console.log(from);
+    console.log(until);
 
     return (
         <>
@@ -45,7 +47,8 @@ export function PipelineHealth() {
                 </div>
             </div>
             <span className="flex justify-center my-4 text-sm text-muted-foreground">
-                Selected {totals.totalRuns} runs between {DateTime.formatIso(from)} and {DateTime.formatIso(until)}
+                Selected {totals.totalRuns} runs between {DateTime.formatIsoZoned(from)} and{" "}
+                {DateTime.formatIsoZoned(until)}
             </span>
 
             <Suspense fallback={<p>Loading...</p>}>
