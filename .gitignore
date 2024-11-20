@@ -1,0 +1,12 @@
+.next
+.vercel
+node_modules
+
+.env.*
+!.env.sample
+!.env.staging
+!.env.development
+
+.DS_Store
+next-env.d.ts
+tsconfig.tsbuildinfo
