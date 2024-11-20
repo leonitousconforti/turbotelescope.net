@@ -45,20 +45,30 @@ export class SchemaName extends Schema.transformOrFail(
     ),
     Schema.DateTimeUtcFromSelf,
     {
-        encode: (utcDateTime: DateTime.Utc) => {
-            const pad = (n: number, digits: number = 1): `${number}` =>
-                n < 10 ** digits ? (`${"0".repeat(digits)}${n}` as `${number}`) : (`${n}` as `${number}`);
+        encode: (utcDateTime: DateTime.Utc) =>
+            Effect.gen(function* () {
+                const zone = yield* Effect.mapError(
+                    DateTime.zoneFromString("America/chicago"),
+                    () => new ParseResult.Unexpected("America/chicago", "unexpected time zone")
+                );
+                const localDateTime = yield* Effect.mapError(
+                    DateTime.makeZoned(utcDateTime, { timeZone: zone, adjustForTimeZone: false }),
+                    () => new ParseResult.Unexpected({}, "unexpected utc date time")
+                );
 
-            const day = pad(DateTime.getPartUtc(utcDateTime, "day"));
-            const month = pad(DateTime.getPartUtc(utcDateTime, "month"));
-            const year = pad(DateTime.getPartUtc(utcDateTime, "year"), 3);
-            const hours = pad(DateTime.getPartUtc(utcDateTime, "hours"));
-            const minutes = pad(DateTime.getPartUtc(utcDateTime, "minutes"));
-            const seconds = pad(DateTime.getPartUtc(utcDateTime, "seconds"));
-            const prefix = "science_turbo_production_pipeline" as const;
-            const out = `${prefix}_${month}_${day}_${year}_${hours}_${minutes}_${seconds}` as const;
-            return ParseResult.succeed(out);
-        },
+                const pad = (n: number, digits: number = 1): `${number}` =>
+                    n < 10 ** digits ? (`${"0".repeat(digits)}${n}` as `${number}`) : (`${n}` as `${number}`);
+
+                const day = pad(DateTime.getPart(localDateTime, "day"));
+                const month = pad(DateTime.getPart(localDateTime, "month"));
+                const year = pad(DateTime.getPart(localDateTime, "year"), 3);
+                const hours = pad(DateTime.getPart(localDateTime, "hours"));
+                const minutes = pad(DateTime.getPart(localDateTime, "minutes"));
+                const seconds = pad(DateTime.getPart(localDateTime, "seconds"));
+                const prefix = "science_turbo_production_pipeline" as const;
+                const out = `${prefix}_${month}_${day}_${year}_${hours}_${minutes}_${seconds}` as const;
+                return out;
+            }),
         decode: (
             str: `${"science" | "reference"}_turbo_production_pipeline_${number}_${number}_${number}_${number}_${number}_${number}`
         ): Effect.Effect<DateTime.Utc, ParseResult.ParseIssue, never> =>
@@ -93,7 +103,7 @@ export class SchemaName extends Schema.transformOrFail(
                         { year, month, day, hours, minutes, seconds },
                         {
                             timeZone: zone,
-                            adjustForTimeZone: false,
+                            adjustForTimeZone: true,
                         }
                     ),
                     Option.map(DateTime.toPartsUtc),

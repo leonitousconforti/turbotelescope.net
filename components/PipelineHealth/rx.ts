@@ -48,17 +48,9 @@ export const localeRx = Rx.fn<string, never, DateTime.TimeZone>(
 
 // fromRx tracks the start of the time range that the user has selected
 export const fromRx = Rx.fn<Date, never, DateTime.Utc>(
-    (date: Date, ctx: Rx.Context): Effect.Effect<DateTime.Utc, never, never> =>
-        Effect.Do.pipe(
-            Effect.bind("locale", () => ctx.result(localeRx)),
-            Effect.bind("date", () => Effect.succeed(date)),
-            Effect.flatMap(({ date, locale }) =>
-                DateTime.makeZoned(date, {
-                    timeZone: locale,
-                    adjustForTimeZone: true,
-                })
-            ),
-            Effect.map(Function.compose(DateTime.toEpochMillis, DateTime.unsafeMake)),
+    (date: Date, _ctx: Rx.Context): Effect.Effect<DateTime.Utc, never, never> =>
+        Function.pipe(
+            DateTime.make(date),
             Effect.catchAll(() => new Cause.IllegalArgumentException("Invalid date")),
             Effect.tap(Effect.logDebug),
             Effect.orDie
@@ -74,17 +66,9 @@ export const fromRx = Rx.fn<Date, never, DateTime.Utc>(
 
 // untilRx tracks the end of the time range that the user has selected
 export const untilRx = Rx.fn<Date, never, DateTime.Utc>(
-    (date: Date, ctx: Rx.Context): Effect.Effect<DateTime.Utc, never, never> =>
-        Effect.Do.pipe(
-            Effect.bind("locale", () => ctx.result(localeRx)),
-            Effect.bind("date", () => Effect.succeed(date)),
-            Effect.flatMap(({ date, locale }) =>
-                DateTime.makeZoned(date, {
-                    timeZone: locale,
-                    adjustForTimeZone: true,
-                })
-            ),
-            Effect.map(Function.compose(DateTime.toEpochMillis, DateTime.unsafeMake)),
+    (date: Date, _ctx: Rx.Context): Effect.Effect<DateTime.Utc, never, never> =>
+        Function.pipe(
+            DateTime.make(date),
             Effect.catchAll(() => new Cause.IllegalArgumentException("Invalid date")),
             Effect.tap(Effect.logDebug),
             Effect.orDie
@@ -162,9 +146,9 @@ export const timeSeriesGroupedRx: Rx.RxResultFn<
             threshold: number;
             avgFailTime: number;
             avgSuccessTime: number;
+            entries: Array<ResultRow>;
             numberFailedRuns: number;
             numberSuccessfulRuns: number;
-            entries: Array<ResultRow>;
         }
     >,
     never
@@ -179,9 +163,9 @@ export const timeSeriesGroupedRx: Rx.RxResultFn<
                 threshold: number;
                 avgFailTime: number;
                 avgSuccessTime: number;
+                entries: Array<ResultRow>;
                 numberFailedRuns: number;
                 numberSuccessfulRuns: number;
-                entries: Array<ResultRow>;
             }
         >,
         never,
@@ -225,8 +209,8 @@ export const timeSeriesGroupedRx: Rx.RxResultFn<
                     avgSuccessTime,
                     threshold: 30,
                     entries: group,
-                    numberFailedRuns: failures.length,
-                    numberSuccessfulRuns: successes.length,
+                    numberFailedRuns: successes.length,
+                    numberSuccessfulRuns: failures.length,
                 };
             });
 
@@ -234,9 +218,9 @@ export const timeSeriesGroupedRx: Rx.RxResultFn<
                 threshold: 30,
                 avgFailTime: 0,
                 avgSuccessTime: 0,
+                entries: Array.empty<ResultRow>(),
                 numberFailedRuns: 0,
                 numberSuccessfulRuns: 0,
-                entries: Array.empty<ResultRow>(),
             };
 
             if (!includeEmptyBuckets) {

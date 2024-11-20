@@ -11,14 +11,15 @@ import { PipelineStepHistogram } from "@/components/PipelineHealth/PipelineStepH
 import { AverageProcessingTimeLineChart } from "@/components/PipelineHealth/RunTimeHist";
 import { RunsTable } from "@/components/PipelineHealth/Table";
 import { fromRx, rowsRx, timeSeriesGroupedRx, totalsRx, untilRx } from "@/components/PipelineHealth/rx";
+import { LocaleSelector } from "./PipelineHealth/LocaleSelector";
 
 export function PipelineHealth() {
     // Sets
     const [_rows, pullRows] = useRx(rowsRx);
-    useMemo(pullRows, []);
+    useMemo(pullRows, [pullRows]);
 
     const pullTimeSeriesData = useRxSet(timeSeriesGroupedRx);
-    useMemo(pullTimeSeriesData, []);
+    useMemo(pullTimeSeriesData, [pullTimeSeriesData]);
 
     // Gets
     const from = useRxValue(fromRx).pipe(Result.getOrThrow);
@@ -38,6 +39,9 @@ export function PipelineHealth() {
                 </div>
                 <div className="mx-1">
                     <EmptyBucketsToggle />
+                </div>
+                <div className="mx-1">
+                    <LocaleSelector />
                 </div>
             </div>
             <span className="flex justify-center my-4 text-sm text-muted-foreground">
