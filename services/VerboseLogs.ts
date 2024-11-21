@@ -26,7 +26,7 @@ const make = Effect.gen(function* () {
         );
 
         const timeParts =
-            `${monthString}_${dayString}_${yearString}_${hoursString}_${minutesString}_${secondsString}` as const;
+            `${yearString}_${monthString}_${dayString}_${hoursString}_${minutesString}_${secondsString}` as const;
 
         const server = machine === "tlenaii" ? tlenaiiServer : popcornServer;
         const location = `Light_weight_pipeline_${timeParts}` as const;

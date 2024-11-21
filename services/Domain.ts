@@ -272,6 +272,6 @@ export class SubscribeToRunsRequest extends Rpc.StreamRequest<SubscribeToRunsReq
 
 export class VerboseLogRequest extends Rpc.StreamRequest<VerboseLogRequest>()("VerboseLogRequest", {
     failure: Schema.Never,
-    success: Schema.Uint8ArrayFromSelf,
+    success: Schema.Uint8Array,
     payload: { schemaName: SchemaName.from, machine: Schema.Literal("tlenaii", "popcorn") },
 }) {}
