@@ -19,7 +19,11 @@ export const databaseRouter = RpcRouter.make(
 );
 
 export const verboseLogsRouter = RpcRouter.make(
-    Rpc.effect(VerboseLogRequest, ({ machine, schemaName }) =>
-        Effect.flatMap(VerboseLogs, (verboseLogs) => verboseLogs.fetchLog(schemaName, machine)).pipe(Effect.orDie)
+    Rpc.stream(VerboseLogRequest, ({ machine, schemaName }) =>
+        Function.pipe(
+            Effect.map(VerboseLogs, (verboseLogs) => verboseLogs.fetchLog(schemaName, machine)),
+            Stream.unwrap,
+            Stream.orDie
+        )
     )
 );

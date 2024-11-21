@@ -270,8 +270,8 @@ export class SubscribeToRunsRequest extends Rpc.StreamRequest<SubscribeToRunsReq
     payload: { refreshInterval: Schema.DurationFromSelf },
 }) {}
 
-export class VerboseLogRequest extends Schema.TaggedRequest<VerboseLogRequest>()("VerboseLogRequest", {
+export class VerboseLogRequest extends Rpc.StreamRequest<VerboseLogRequest>()("VerboseLogRequest", {
     failure: Schema.Never,
-    success: Schema.String,
+    success: Schema.Uint8ArrayFromSelf,
     payload: { schemaName: SchemaName.from, machine: Schema.Literal("tlenaii", "popcorn") },
 }) {}

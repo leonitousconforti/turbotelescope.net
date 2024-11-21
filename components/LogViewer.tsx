@@ -2,7 +2,7 @@
 
 import { Result, Rx, useRx } from "@effect-rx/rx-react";
 import { FetchHttpClient, HttpClient, HttpClientError } from "@effect/platform";
-import { Effect, Scope } from "effect";
+import { Cause, Effect, Scope, Stream } from "effect";
 
 import { rpcClient } from "@/app/api/client";
 import { SchemaName, VerboseLogRequest } from "@/services/Domain";
@@ -12,17 +12,17 @@ const runtime = Rx.runtime(FetchHttpClient.layer);
 
 const verboseLogRx: Rx.RxResultFn<
     { schemaName: typeof SchemaName.from.Type; machine: "tlenaii" | "popcorn" },
-    string,
-    never
+    Uint8Array,
+    Cause.NoSuchElementException
 > = runtime.fn(
     (
         { machine, schemaName }: { schemaName: typeof SchemaName.from.Type; machine: "tlenaii" | "popcorn" },
         _context: Rx.Context
-    ): Effect.Effect<string, never, HttpClient.HttpClient<HttpClientError.HttpClientError, Scope.Scope>> =>
-        Effect.Do.pipe(
-            Effect.bind("request", () => Effect.succeed(new VerboseLogRequest({ schemaName, machine }))),
-            Effect.bind("client", () => rpcClient),
-            Effect.flatMap(({ client, request }) => client(request))
+    ): Stream.Stream<Uint8Array, never, HttpClient.HttpClient<HttpClientError.HttpClientError, Scope.Scope>> =>
+        Stream.Do.pipe(
+            Stream.bind("request", () => Effect.succeed(new VerboseLogRequest({ schemaName, machine }))),
+            Stream.bind("client", () => rpcClient),
+            Stream.flatMap(({ client, request }) => client(request))
         )
 );
 
