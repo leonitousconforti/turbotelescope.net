@@ -7,6 +7,7 @@ import {
     activeDataRx,
     activeLabelRx,
     aggregateByRx,
+    localeRx,
     timeSeriesGroupedRx,
     totalsRx,
 } from "@/components/PipelineHealth/rx";
@@ -63,6 +64,7 @@ export type MappedData = Array<{
 export function AverageProcessingTimeLineChart() {
     // Gets
     const aggregateBy = useRxValue(aggregateByRx);
+    const locale = useRxValue(localeRx);
 
     // Sets
     const setActiveLabel = useRxSet(activeLabelRx);
@@ -73,7 +75,7 @@ export function AverageProcessingTimeLineChart() {
     const timeSeriesData = useRxSuspense(timeSeriesGroupedRx);
 
     // Error handling
-    if (!Result.isSuccess(timeSeriesData) || !Result.isSuccess(totals)) {
+    if (!Result.isSuccess(timeSeriesData) || !Result.isSuccess(totals) || !Result.isSuccess(locale)) {
         return <p>BAD</p>;
     }
 
@@ -95,7 +97,6 @@ export function AverageProcessingTimeLineChart() {
             })
         )
     );
-    //console.log(chartData);
     const activeChartKey = activeChart === "success" ? chart2 : chart3;
     // Chart implementation
     return (
@@ -150,7 +151,7 @@ export function AverageProcessingTimeLineChart() {
                             tickFormatter={Function.flow(
                                 DateTime.make,
                                 Option.getOrThrow,
-                                DateTime.formatLocal({ locale: "en-US", month: "short", day: "numeric" })
+                                DateTime.formatUtc({ locale: "en-US", month: "short", day: "numeric" })
                             )}
                         />
                         <YAxis tickLine={true} axisLine={false} tickMargin={8} tickFormatter={(value) => `${value}s`} />
@@ -163,7 +164,7 @@ export function AverageProcessingTimeLineChart() {
                                     labelFormatter={Function.flow(
                                         DateTime.make,
                                         Option.getOrThrow,
-                                        DateTime.formatLocal({
+                                        DateTime.formatUtc({
                                             locale: "en-US",
                                             second: "numeric",
                                             minute: "numeric",

@@ -23,7 +23,7 @@ export function PipelineHealth() {
     useMemo(pullTimeSeriesData, [pullTimeSeriesData]);
 
     const updateFrom = useRxSet(fromRx);
-    useMemo(() => updateFrom(new Date("2024-11-1")), [updateFrom]);
+    useMemo(() => updateFrom(new Date("2024-11-19")), [updateFrom]);
 
     const updateUntil = useRxSet(untilRx);
     useMemo(() => updateUntil(new Date()), [updateUntil]);

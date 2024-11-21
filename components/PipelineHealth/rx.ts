@@ -67,7 +67,7 @@ export const fromRx = Rx.fn<Date, never, DateTime.Zoned>(
         initialValue: Function.pipe(
             DateTime.nowInCurrentZone,
             DateTime.withCurrentZoneLocal,
-            Effect.map(DateTime.subtractDuration(Duration.weeks(2))),
+            Effect.map(DateTime.subtractDuration(Duration.hours(24))),
             Effect.runSync
         ),
     }
