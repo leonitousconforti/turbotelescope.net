@@ -26,10 +26,9 @@ export function LocaleSelector() {
             <DropdownMenuContent align="end">
                 <DropdownMenuRadioGroup
                     value={DateTime.zoneToString(Result.getOrThrow(locale))}
-                    onValueChange={(str) => setLocale(str as "Utc" | "System" | "America/Chicago")}
+                    onValueChange={(str) => setLocale(str as "UTC" | "America/Chicago")}
                 >
-                    <DropdownMenuRadioItem value={"Utc"}>Utc</DropdownMenuRadioItem>
-                    <DropdownMenuRadioItem value={"System"}>System</DropdownMenuRadioItem>
+                    <DropdownMenuRadioItem value={"UTC"}>Utc</DropdownMenuRadioItem>
                     <DropdownMenuRadioItem value={"America/Chicago"}>America/Chicago</DropdownMenuRadioItem>
                 </DropdownMenuRadioGroup>
             </DropdownMenuContent>

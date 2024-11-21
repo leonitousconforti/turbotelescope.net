@@ -1,13 +1,13 @@
 "use client";
 
-import { Result, useRx } from "@effect-rx/rx-react";
+import { Result, useRx, useRxValue } from "@effect-rx/rx-react";
 import { format } from "date-fns";
 import { DateTime, Predicate } from "effect";
 import { Calendar as CalendarIcon } from "lucide-react";
 import { HTMLAttributes, useState } from "react";
 import { DateRange } from "react-day-picker";
 
-import { fromRx, untilRx } from "@/components/PipelineHealth/rx";
+import { fromRx, localeRx, untilRx } from "@/components/PipelineHealth/rx";
 import { Button } from "@/components/ui/button";
 import { Calendar } from "@/components/ui/calendar";
 import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover";
@@ -16,6 +16,7 @@ import { cn } from "@/lib/utils";
 export function DatePickerWithRange({ className }: HTMLAttributes<HTMLDivElement>) {
     const [from, updateFrom] = useRx(fromRx);
     const [until, updateUntil] = useRx(untilRx);
+    const _locale = useRxValue(localeRx).pipe(Result.getOrThrow);
 
     const [date, setDate] = useState<DateRange | undefined>({
         from: DateTime.toDate(Result.getOrThrow(from)),
@@ -60,6 +61,7 @@ export function DatePickerWithRange({ className }: HTMLAttributes<HTMLDivElement
                             if (Predicate.isNotUndefined(dates?.to)) updateUntil(dates.to);
                         }}
                         numberOfMonths={2}
+                        // timeZone="America/Chicago"
                     />
                 </PopoverContent>
             </Popover>

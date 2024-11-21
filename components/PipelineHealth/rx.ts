@@ -17,13 +17,14 @@ import {
     Number,
     Option,
     Record,
+    Schema,
     Scope,
     Sink,
     Stream,
 } from "effect";
 
-import { rpcClient } from "@/rpc/client";
-import { ResultRow, RunsInTimeRangeRequest, SchemaName } from "@/services/Domain";
+import { rpcClient } from "@/app/api/client";
+import { ResultRow, RunsInTimeRangeRequest, SchemaName, ShortPipelineName } from "@/services/Domain";
 
 // Rx runtime
 const runtime = Rx.runtime(Layer.provideMerge(FetchHttpClient.layer, Logger.minimumLogLevel(LogLevel.All)));
@@ -32,7 +33,7 @@ const runtime = Rx.runtime(Layer.provideMerge(FetchHttpClient.layer, Logger.mini
 //            Rx Atoms for pipeline health page
 // ------------------------------------------------------------
 
-// Locale tracks the current timezone/locale that the user has selected
+// Locale tracks the current timezone/locale that the user has selected, which is an IANA time zone identifier
 export const localeRx = Rx.fn<string, never, DateTime.TimeZone>(
     (locale: string, _ctx: Rx.Context): Effect.Effect<DateTime.TimeZone, never, never> =>
         Function.pipe(
@@ -47,51 +48,51 @@ export const localeRx = Rx.fn<string, never, DateTime.TimeZone>(
 );
 
 // fromRx tracks the start of the time range that the user has selected
-export const fromRx = Rx.fn<Date, never, DateTime.Utc>(
-    (date: Date, ctx: Rx.Context): Effect.Effect<DateTime.Utc, never, never> =>
+export const fromRx = Rx.fn<Date, never, DateTime.Zoned>(
+    (date: Date, ctx: Rx.Context): Effect.Effect<DateTime.Zoned, never, never> =>
         Effect.Do.pipe(
             Effect.bind("locale", () => ctx.result(localeRx)),
             Effect.bind("date", () => Effect.succeed(date)),
             Effect.flatMap(({ date, locale }) =>
                 DateTime.makeZoned(date, {
                     timeZone: locale,
-                    adjustForTimeZone: true,
+                    adjustForTimeZone: false,
                 })
             ),
-            Effect.map(Function.compose(DateTime.toEpochMillis, DateTime.unsafeMake)),
             Effect.catchAll(() => new Cause.IllegalArgumentException("Invalid date")),
             Effect.tap(Effect.logDebug),
             Effect.orDie
         ),
     {
         initialValue: Function.pipe(
-            DateTime.now,
-            Effect.map(DateTime.subtractDuration(Duration.weeks(2))),
+            DateTime.nowInCurrentZone,
+            DateTime.withCurrentZoneLocal,
+            Effect.map(DateTime.subtractDuration(Duration.hours(24))),
             Effect.runSync
         ),
     }
 );
 
 // untilRx tracks the end of the time range that the user has selected
-export const untilRx = Rx.fn<Date, never, DateTime.Utc>(
-    (date: Date, ctx: Rx.Context): Effect.Effect<DateTime.Utc, never, never> =>
+export const untilRx = Rx.fn<Date, never, DateTime.Zoned>(
+    (date: Date, ctx: Rx.Context): Effect.Effect<DateTime.Zoned, never, never> =>
         Effect.Do.pipe(
             Effect.bind("locale", () => ctx.result(localeRx)),
-            Effect.bind("date", () => Effect.succeed(date)),
+            Effect.let("date", () => date),
             Effect.flatMap(({ date, locale }) =>
                 DateTime.makeZoned(date, {
                     timeZone: locale,
-                    adjustForTimeZone: true,
+                    adjustForTimeZone: false,
                 })
             ),
-            Effect.map(Function.compose(DateTime.toEpochMillis, DateTime.unsafeMake)),
             Effect.catchAll(() => new Cause.IllegalArgumentException("Invalid date")),
             Effect.tap(Effect.logDebug),
             Effect.orDie
         ),
     {
         initialValue: Function.pipe(
-            DateTime.now,
+            DateTime.nowInCurrentZone,
+            DateTime.withCurrentZoneLocal,
             Effect.map(DateTime.subtractDuration(Duration.millis(0))),
             Effect.runSync
         ),
@@ -110,6 +111,9 @@ export const activeDataRx = Rx.make<"success" | "failure">("success" as const);
 // aggregateByRx tracks the time unit that the user has selected to aggregate the time series data by
 export const aggregateByRx = Rx.make<Exclude<DateTime.DateTime.UnitPlural, "millis">>("days");
 
+//Creating list of Pipeline to select from when querrying
+export const steps2queryRx = Rx.make<Set<typeof ShortPipelineName.to.Type>>(new Set(ShortPipelineName.to.literals));
+
 // ------------------------------------------------------------
 //            Composed Rx's for pipeline health page
 // ------------------------------------------------------------
@@ -123,11 +127,25 @@ export const rowsRx: Rx.RxResultFn<void, Array<ResultRow>, never> = runtime.fn(
         Effect.Do.pipe(
             Effect.bind("from", () => ctx.result(fromRx)),
             Effect.bind("until", () => ctx.result(untilRx)),
-            Effect.bind("request", ({ from, until }) => Effect.succeed(new RunsInTimeRangeRequest({ from, until }))),
+            Effect.let("zoned2Utc", () => Function.compose(DateTime.toEpochMillis, DateTime.unsafeMake)),
+            Effect.bind("request", ({ from, until, zoned2Utc }) =>
+                Effect.succeed(new RunsInTimeRangeRequest({ from: zoned2Utc(from), until: zoned2Utc(until) }))
+            ),
             Effect.bind("client", () => rpcClient),
             Effect.flatMap(({ client, request }) => client(request)),
             Effect.map(Record.values),
-            Effect.map(Array.flatten)
+            Effect.map(Array.flatten),
+            Effect.map((x) => {
+                const steps2query = ctx.get(steps2queryRx);
+                const a = Array.filterMap(x, (data) => {
+                    const shortname = Schema.decodeOption(ShortPipelineName)(data.pipelineStep);
+                    if (Option.isSome(shortname)) {
+                        if (steps2query.has(shortname.value)) return Option.some(data);
+                    }
+                    return Option.none();
+                });
+                return a;
+            })
         )
 );
 
@@ -162,9 +180,9 @@ export const timeSeriesGroupedRx: Rx.RxResultFn<
             threshold: number;
             avgFailTime: number;
             avgSuccessTime: number;
+            entries: Array<ResultRow>;
             numberFailedRuns: number;
             numberSuccessfulRuns: number;
-            entries: Array<ResultRow>;
         }
     >,
     never
@@ -179,9 +197,9 @@ export const timeSeriesGroupedRx: Rx.RxResultFn<
                 threshold: number;
                 avgFailTime: number;
                 avgSuccessTime: number;
+                entries: Array<ResultRow>;
                 numberFailedRuns: number;
                 numberSuccessfulRuns: number;
-                entries: Array<ResultRow>;
             }
         >,
         never,
@@ -196,7 +214,7 @@ export const timeSeriesGroupedRx: Rx.RxResultFn<
 
             const zeroOutParts: (
                 u: Exclude<DateTime.DateTime.UnitPlural, "millis">
-            ) => (d: DateTime.Utc) => DateTime.Utc = Function.pipe(
+            ) => (d: DateTime.DateTime) => DateTime.DateTime = Function.pipe(
                 Match.type<Exclude<DateTime.DateTime.UnitPlural, "millis">>(),
                 Match.when("seconds", () => DateTime.setPartsUtc({ millis: 0 })),
                 Match.when("minutes", () => DateTime.setPartsUtc({ millis: 0, seconds: 0 })),
@@ -225,8 +243,8 @@ export const timeSeriesGroupedRx: Rx.RxResultFn<
                     avgSuccessTime,
                     threshold: 30,
                     entries: group,
-                    numberFailedRuns: failures.length,
-                    numberSuccessfulRuns: successes.length,
+                    numberFailedRuns: successes.length,
+                    numberSuccessfulRuns: failures.length,
                 };
             });
 
@@ -234,9 +252,9 @@ export const timeSeriesGroupedRx: Rx.RxResultFn<
                 threshold: 30,
                 avgFailTime: 0,
                 avgSuccessTime: 0,
+                entries: Array.empty<ResultRow>(),
                 numberFailedRuns: 0,
                 numberSuccessfulRuns: 0,
-                entries: Array.empty<ResultRow>(),
             };
 
             if (!includeEmptyBuckets) {

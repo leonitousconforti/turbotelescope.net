@@ -1,29 +1,34 @@
 "use client";
 
-import { Result, Rx, useRx } from "@effect-rx/rx-react";
+import { Rx, useRxSet, useRxSuspenseSuccess } from "@effect-rx/rx-react";
 import { FetchHttpClient, HttpClient, HttpClientError } from "@effect/platform";
-import { Effect, Scope } from "effect";
+import { Scope, Stream } from "effect";
 
-import { rpcClient } from "@/rpc/client";
+import { rpcClient } from "@/app/api/client";
 import { SchemaName, VerboseLogRequest } from "@/services/Domain";
 import { useMemo } from "react";
 
 const runtime = Rx.runtime(FetchHttpClient.layer);
 
-const verboseLogRx: Rx.RxResultFn<
-    { schemaName: typeof SchemaName.from.Type; machine: "tlenaii" | "popcorn" },
-    string,
-    never
-> = runtime.fn(
+const machineRx = Rx.make<"tlenaii" | "popcorn">("popcorn" as const);
+const schemaNameRx = Rx.make<typeof SchemaName.from.Type>(
+    "" as `science_turbo_production_pipeline_${number}_${number}_${number}_${number}_${number}_${number}`
+);
+
+const verboseLogRx: Rx.Writable<Rx.PullResult<Uint8Array, never>, void> = runtime.pull(
     (
-        { machine, schemaName }: { schemaName: typeof SchemaName.from.Type; machine: "tlenaii" | "popcorn" },
-        _context: Rx.Context
-    ): Effect.Effect<string, never, HttpClient.HttpClient<HttpClientError.HttpClientError, Scope.Scope>> =>
-        Effect.Do.pipe(
-            Effect.bind("request", () => Effect.succeed(new VerboseLogRequest({ schemaName, machine }))),
-            Effect.bind("client", () => rpcClient),
-            Effect.flatMap(({ client, request }) => client(request))
-        )
+        context: Rx.Context
+    ): Stream.Stream<Uint8Array, never, HttpClient.HttpClient<HttpClientError.HttpClientError, Scope.Scope>> =>
+        Stream.Do.pipe(
+            Stream.let("machine", () => context.get(machineRx)),
+            Stream.let("schemaName", () => context.get(schemaNameRx)),
+            Stream.let("request", ({ machine, schemaName }) => new VerboseLogRequest({ schemaName, machine })),
+            Stream.bind("client", () => rpcClient),
+            Stream.flatMap(({ client, request }) => client(request))
+        ),
+    {
+        disableAccumulation: false,
+    }
 );
 
 export function LogViewer({
@@ -33,20 +38,16 @@ export function LogViewer({
     machine: "tlenaii" | "popcorn";
     schemaName: typeof SchemaName.Encoded;
 }) {
-    const [verboseLogs, fetchVerboseLogs] = useRx(verboseLogRx);
-    useMemo(() => fetchVerboseLogs({ machine, schemaName }), [fetchVerboseLogs, machine, schemaName]);
+    // Sets
+    const setMachineName = useRxSet(machineRx);
+    const setSchemaName = useRxSet(schemaNameRx);
+    useMemo(() => setMachineName(machine), [machine, setMachineName]);
+    useMemo(() => setSchemaName(schemaName), [schemaName, setSchemaName]);
 
-    if (Result.isInitial(verboseLogs)) {
-        return <p>Loading...</p>;
-    }
+    // Suspenses
+    const verboseLogs = useRxSuspenseSuccess(verboseLogRx).value;
 
-    if (Result.isFailure(verboseLogs) || Result.isInterrupted(verboseLogs)) {
-        return <p>Failed to load logs</p>;
-    }
-
-    if (!Result.isSuccess(verboseLogs)) {
-        return <p>BAD</p>;
-    }
-
-    return <p>{verboseLogs.value}</p>;
+    // Content
+    const all = verboseLogs.items.map((item) => new TextDecoder().decode(item)).join("\n");
+    return <p>{all}</p>;
 }

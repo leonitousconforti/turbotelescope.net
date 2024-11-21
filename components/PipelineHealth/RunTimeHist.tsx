@@ -7,6 +7,7 @@ import {
     activeDataRx,
     activeLabelRx,
     aggregateByRx,
+    localeRx,
     timeSeriesGroupedRx,
     totalsRx,
 } from "@/components/PipelineHealth/rx";
@@ -16,6 +17,8 @@ import { ChartConfig, ChartContainer, ChartTooltip, ChartTooltipContent } from "
 const chart1 = "thirtySecondThreshold" as const;
 const chart2 = "averageSuccessProcessingTime" as const;
 const chart3 = "averageFailureProcessingTime" as const;
+const chart4 = "numberOfSuccessfulRuns" as const;
+const chart5 = "numberOfFailedRuns" as const;
 
 export const chartConfigs = {
     [chart1]: {
@@ -24,16 +27,28 @@ export const chartConfigs = {
         icon: DotFilledIcon,
     },
     [chart2]: {
-        color: "hsl(var(--chart-2))",
+        color: "#00cc00",
         title: "Percent success",
         label: "Average successful processing time",
         icon: CheckIcon,
     },
     [chart3]: {
-        color: "hsl(var(--chart-1))",
+        color: "#FF0000",
         title: "Percent failure",
         label: "Average failed processing time",
         icon: Cross2Icon,
+    },
+    [chart5]: {
+        color: "#FF0000",
+        title: "Number of Failed of Runs",
+        label: "Number of Failed Runs",
+        icon: Cross2Icon,
+    },
+    [chart4]: {
+        color: "#FF0000",
+        title: "Number of Successful Runs",
+        label: "Number of Succcessful Runs",
+        icon: CheckIcon,
     },
 } satisfies ChartConfig;
 
@@ -42,11 +57,14 @@ export type MappedData = Array<{
     [chart1]: number;
     [chart2]: number;
     [chart3]: number;
+    [chart4]: number;
+    [chart5]: number;
 }>;
 
 export function AverageProcessingTimeLineChart() {
     // Gets
     const aggregateBy = useRxValue(aggregateByRx);
+    const locale = useRxValue(localeRx);
 
     // Sets
     const setActiveLabel = useRxSet(activeLabelRx);
@@ -57,7 +75,7 @@ export function AverageProcessingTimeLineChart() {
     const timeSeriesData = useRxSuspense(timeSeriesGroupedRx);
 
     // Error handling
-    if (!Result.isSuccess(timeSeriesData) || !Result.isSuccess(totals)) {
+    if (!Result.isSuccess(timeSeriesData) || !Result.isSuccess(totals) || !Result.isSuccess(locale)) {
         return <p>BAD</p>;
     }
 
@@ -67,14 +85,19 @@ export function AverageProcessingTimeLineChart() {
         [chart3]: totals.value.failureRate,
     };
     const chartData: MappedData = Record.values(
-        Record.map(timeSeriesData.value, ({ avgFailTime, avgSuccessTime, threshold }, key) => ({
-            date: key,
-            [chart1]: threshold,
-            [chart2]: avgSuccessTime,
-            [chart3]: avgFailTime,
-        }))
+        Record.map(
+            timeSeriesData.value,
+            ({ avgFailTime, avgSuccessTime, numberFailedRuns, numberSuccessfulRuns, threshold }, key) => ({
+                date: key,
+                [chart1]: threshold,
+                [chart2]: avgSuccessTime,
+                [chart3]: avgFailTime,
+                [chart4]: numberFailedRuns,
+                [chart5]: numberSuccessfulRuns,
+            })
+        )
     );
-
+    const activeChartKey = activeChart === "success" ? chart2 : chart3;
     // Chart implementation
     return (
         <Card>
@@ -128,11 +151,12 @@ export function AverageProcessingTimeLineChart() {
                             tickFormatter={Function.flow(
                                 DateTime.make,
                                 Option.getOrThrow,
-                                DateTime.formatLocal({ locale: "en-US", month: "short", day: "numeric" })
+                                DateTime.formatUtc({ locale: "en-US", month: "short", day: "numeric" })
                             )}
                         />
                         <YAxis tickLine={true} axisLine={false} tickMargin={8} tickFormatter={(value) => `${value}s`} />
                         <ChartTooltip
+                            includeHidden
                             payloadUniqBy={({ dataKey }) => dataKey}
                             content={
                                 <ChartTooltipContent
@@ -140,7 +164,7 @@ export function AverageProcessingTimeLineChart() {
                                     labelFormatter={Function.flow(
                                         DateTime.make,
                                         Option.getOrThrow,
-                                        DateTime.formatLocal({
+                                        DateTime.formatUtc({
                                             locale: "en-US",
                                             second: "numeric",
                                             minute: "numeric",
@@ -154,11 +178,23 @@ export function AverageProcessingTimeLineChart() {
                             }
                         />
                         <Legend
+                            payload={[
+                                {
+                                    id: activeChartKey,
+                                    type: "square",
+                                    value: chartConfigs[activeChartKey].label,
+                                    color: chartConfigs[activeChartKey].color,
+                                },
+                                {
+                                    id: chart1,
+                                    type: "line",
+                                    value: chartConfigs[chart1].label,
+                                    color: chartConfigs[chart1].color,
+                                },
+                            ]}
                             verticalAlign="top"
                             align="left"
                             height={36}
-                            payloadUniqBy={({ dataKey }) => dataKey}
-                            iconType="line"
                         />
                         <Bar
                             key={activeChart === "success" ? `${chart2}-bar` : `${chart3}-bar`}
@@ -168,14 +204,6 @@ export function AverageProcessingTimeLineChart() {
                             fillOpacity={0.5}
                         />
                         <Line
-                            key={activeChart === "success" ? `${chart2}-line` : `${chart3}-line`}
-                            dataKey={activeChart === "success" ? chart2 : chart3}
-                            type="monotone"
-                            stroke={`var(--color-${activeChart === "success" ? chart2 : chart3})`}
-                            strokeWidth={1}
-                            dot={false}
-                        />
-                        <Line
                             dataKey={chart1}
                             type="monotone"
                             stroke={`var(--color-${chart1})`}
@@ -183,6 +211,12 @@ export function AverageProcessingTimeLineChart() {
                             strokeDasharray={"3 3"}
                             dot={false}
                         />
+                        {/* Enables Chart of Hover based on active chart */}
+                        {activeChart === "success" ? (
+                            <Line dataKey={chart4} hide />
+                        ) : activeChart === "failure" ? (
+                            <Line dataKey={chart5} hide />
+                        ) : null}
                     </ComposedChart>
                 </ChartContainer>
             </CardContent>

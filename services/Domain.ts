@@ -1,3 +1,4 @@
+import { Rpc } from "@effect/rpc";
 import { DateTime, Effect, Function, Match, Option, ParseResult, Schema } from "effect";
 
 /** @internal */
@@ -23,11 +24,7 @@ export const splitLiteral = <StrInput extends string, Delimiter extends string>(
     delimiter: Delimiter
 ): Split<StrInput, Delimiter> => strInput.split(delimiter) as Split<StrInput, Delimiter>;
 
-/**
- * Schema name for a data entry.
- *
- * @since 2024-10-01
- */
+/** Schema name for a data entry. */
 export class SchemaName extends Schema.transformOrFail(
     Schema.TemplateLiteral(
         Schema.Literal("science_turbo_production_pipeline_", "reference_turbo_production_pipeline_"),
@@ -45,20 +42,30 @@ export class SchemaName extends Schema.transformOrFail(
     ),
     Schema.DateTimeUtcFromSelf,
     {
-        encode: (utcDateTime: DateTime.Utc) => {
-            const pad = (n: number, digits: number = 1): `${number}` =>
-                n < 10 ** digits ? (`${"0".repeat(digits)}${n}` as `${number}`) : (`${n}` as `${number}`);
+        encode: (utcDateTime: DateTime.Utc) =>
+            Effect.gen(function* () {
+                const zone = yield* Effect.mapError(
+                    DateTime.zoneFromString("America/chicago"),
+                    () => new ParseResult.Unexpected("America/chicago", "unexpected time zone")
+                );
+                const localDateTime = yield* Effect.mapError(
+                    DateTime.makeZoned(utcDateTime, { timeZone: zone, adjustForTimeZone: false }),
+                    () => new ParseResult.Unexpected({}, "unexpected utc date time")
+                );
 
-            const day = pad(DateTime.getPartUtc(utcDateTime, "day"));
-            const month = pad(DateTime.getPartUtc(utcDateTime, "month"));
-            const year = pad(DateTime.getPartUtc(utcDateTime, "year"), 3);
-            const hours = pad(DateTime.getPartUtc(utcDateTime, "hours"));
-            const minutes = pad(DateTime.getPartUtc(utcDateTime, "minutes"));
-            const seconds = pad(DateTime.getPartUtc(utcDateTime, "seconds"));
-            const prefix = "science_turbo_production_pipeline" as const;
-            const out = `${prefix}_${month}_${day}_${year}_${hours}_${minutes}_${seconds}` as const;
-            return ParseResult.succeed(out);
-        },
+                const pad = (n: number, digits: number = 1): `${number}` =>
+                    n < 10 ** digits ? (`${"0".repeat(digits)}${n}` as `${number}`) : (`${n}` as `${number}`);
+
+                const day = pad(DateTime.getPart(localDateTime, "day"));
+                const month = pad(DateTime.getPart(localDateTime, "month"));
+                const year = pad(DateTime.getPart(localDateTime, "year"), 3);
+                const hours = pad(DateTime.getPart(localDateTime, "hours"));
+                const minutes = pad(DateTime.getPart(localDateTime, "minutes"));
+                const seconds = pad(DateTime.getPart(localDateTime, "seconds"));
+                const prefix = "science_turbo_production_pipeline" as const;
+                const out = `${prefix}_${month}_${day}_${year}_${hours}_${minutes}_${seconds}` as const;
+                return out;
+            }),
         decode: (
             str: `${"science" | "reference"}_turbo_production_pipeline_${number}_${number}_${number}_${number}_${number}_${number}`
         ): Effect.Effect<DateTime.Utc, ParseResult.ParseIssue, never> =>
@@ -93,7 +100,7 @@ export class SchemaName extends Schema.transformOrFail(
                         { year, month, day, hours, minutes, seconds },
                         {
                             timeZone: zone,
-                            adjustForTimeZone: false,
+                            adjustForTimeZone: true,
                         }
                     ),
                     Option.map(DateTime.toPartsUtc),
@@ -114,11 +121,7 @@ export class SchemaName extends Schema.transformOrFail(
     }
 ) {}
 
-/**
- * Pipeline step names for lightweight runtime
- *
- * @since 2024-10-01
- */
+/** Pipeline step names for lightweight runtime */
 export class PipelineStepName extends Schema.Literal(
     "Bad pix map generation",
     "Basic data reduction",
@@ -144,11 +147,7 @@ export class PipelineStepName extends Schema.Literal(
     "Create bad pixel mask from raw image"
 ) {}
 
-/**
- * Short pipeline step names for lightweight runtime
- *
- * @since 2024-10-01
- */
+/** Short pipeline step names for lightweight runtime */
 
 export class ShortPipelineName extends Schema.transform(
     PipelineStepName,
@@ -224,11 +223,7 @@ export class ShortPipelineName extends Schema.transform(
     }
 ) {}
 
-/**
- * Schema for Image Status tables
- *
- * @since 2024-10-01
- */
+/** Schema for Image Status tables */
 export class ImageStatusTableRow extends Schema.Class<ImageStatusTableRow>("ImageStatusTableRow")({
     imageId: Schema.Number,
     pipelineStep: PipelineStepName,
@@ -236,11 +231,7 @@ export class ImageStatusTableRow extends Schema.Class<ImageStatusTableRow>("Imag
     completion: Schema.String,
 }) {}
 
-/**
- * Schema for Images Table rows tables
- *
- * @since 2024-10-01
- */
+/** Schema for Images Table rows tables */
 export class ImagesTableRow extends Schema.Class<ImagesTableRow>("ImagesTableRow")({
     imageId: Schema.Number,
     filePath: Schema.String,
@@ -273,8 +264,14 @@ export class RunsInTimeRangeRequest extends Schema.TaggedRequest<RunsInTimeRange
     payload: { from: Schema.DateTimeUtc, until: Schema.DateTimeUtc },
 }) {}
 
-export class VerboseLogRequest extends Schema.TaggedRequest<VerboseLogRequest>()("VerboseLogRequest", {
+export class SubscribeToRunsRequest extends Rpc.StreamRequest<SubscribeToRunsRequest>()("SubscribeToRunsRequest", {
     failure: Schema.Never,
-    success: Schema.String,
+    success: Schema.Record({ key: SchemaName.from, value: Schema.Array(ResultRow) }),
+    payload: { refreshInterval: Schema.DurationFromSelf },
+}) {}
+
+export class VerboseLogRequest extends Rpc.StreamRequest<VerboseLogRequest>()("VerboseLogRequest", {
+    failure: Schema.Never,
+    success: Schema.Uint8Array,
     payload: { schemaName: SchemaName.from, machine: Schema.Literal("tlenaii", "popcorn") },
 }) {}
