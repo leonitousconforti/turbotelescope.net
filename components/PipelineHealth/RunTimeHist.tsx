@@ -1,4 +1,3 @@
-/* eslint-disable prettier/prettier */
 import { Result, useRx, useRxSet, useRxSuspense, useRxValue } from "@effect-rx/rx-react";
 import { CheckIcon, Cross2Icon, DotFilledIcon } from "@radix-ui/react-icons";
 import { DateTime, Function, Option, Record } from "effect";

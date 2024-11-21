@@ -12,6 +12,7 @@ import { AverageProcessingTimeLineChart } from "@/components/PipelineHealth/RunT
 import { RunsTable } from "@/components/PipelineHealth/Table";
 import { fromRx, rowsRx, timeSeriesGroupedRx, totalsRx, untilRx } from "@/components/PipelineHealth/rx";
 import { LocaleSelector } from "./PipelineHealth/LocaleSelector";
+import { Steps2querySelector } from "./PipelineHealth/StepsFilter";
 
 export function PipelineHealth() {
     // Sets
@@ -27,8 +28,6 @@ export function PipelineHealth() {
 
     // Suspenses
     const totals = useRxSuspenseSuccess(totalsRx).value;
-    console.log(from);
-    console.log(until);
 
     return (
         <>
@@ -45,9 +44,12 @@ export function PipelineHealth() {
                 <div className="mx-1">
                     <LocaleSelector />
                 </div>
+                <div className="mx-1">
+                    <Steps2querySelector />
+                </div>
             </div>
             <span className="flex justify-center my-4 text-sm text-muted-foreground">
-                Selected {totals.totalRuns} runs between {DateTime.formatIsoZoned(from)} and{" "}
+                Selected {totals.totalRuns} images between {DateTime.formatIsoZoned(from)} and{" "}
                 {DateTime.formatIsoZoned(until)}
             </span>
 

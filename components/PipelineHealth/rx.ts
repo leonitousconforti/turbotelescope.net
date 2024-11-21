@@ -17,13 +17,14 @@ import {
     Number,
     Option,
     Record,
+    Schema,
     Scope,
     Sink,
     Stream,
 } from "effect";
 
 import { rpcClient } from "@/rpc/client";
-import { ResultRow, RunsInTimeRangeRequest, SchemaName } from "@/services/Domain";
+import { ResultRow, RunsInTimeRangeRequest, SchemaName, ShortPipelineName } from "@/services/Domain";
 
 // Rx runtime
 const runtime = Rx.runtime(Layer.provideMerge(FetchHttpClient.layer, Logger.minimumLogLevel(LogLevel.All)));
@@ -112,6 +113,9 @@ export const activeDataRx = Rx.make<"success" | "failure">("success" as const);
 // aggregateByRx tracks the time unit that the user has selected to aggregate the time series data by
 export const aggregateByRx = Rx.make<Exclude<DateTime.DateTime.UnitPlural, "millis">>("days");
 
+//Creating list of Pipeline to select from when querrying
+export const steps2queryRx = Rx.make<Set<typeof ShortPipelineName.to.Type>>(new Set(ShortPipelineName.to.literals));
+
 // ------------------------------------------------------------
 //            Composed Rx's for pipeline health page
 // ------------------------------------------------------------
@@ -132,7 +136,18 @@ export const rowsRx: Rx.RxResultFn<void, Array<ResultRow>, never> = runtime.fn(
             Effect.bind("client", () => rpcClient),
             Effect.flatMap(({ client, request }) => client(request)),
             Effect.map(Record.values),
-            Effect.map(Array.flatten)
+            Effect.map(Array.flatten),
+            Effect.map((x) => {
+                const steps2query = ctx.get(steps2queryRx);
+                const a = Array.filterMap(x, (data) => {
+                    const shortname = Schema.decodeOption(ShortPipelineName)(data.pipelineStep);
+                    if (Option.isSome(shortname)) {
+                        if (steps2query.has(shortname.value)) return Option.some(data);
+                    }
+                    return Option.none();
+                });
+                return a;
+            })
         )
 );
 
