@@ -61,7 +61,7 @@ export function DatePickerWithRange({ className }: HTMLAttributes<HTMLDivElement
                             if (Predicate.isNotUndefined(dates?.to)) updateUntil(dates.to);
                         }}
                         numberOfMonths={2}
-                        timeZone="America/Chicago"
+                        // timeZone="America/Chicago"
                     />
                 </PopoverContent>
             </Popover>
