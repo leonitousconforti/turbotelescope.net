@@ -1,6 +1,6 @@
 "use client";
 
-import { Result, useRx, useRxSet, useRxSuspenseSuccess, useRxValue } from "@effect-rx/rx-react";
+import { useRx, useRxSet, useRxSuspenseSuccess } from "@effect-rx/rx-react";
 import { DateTime } from "effect";
 import { Suspense, useMemo } from "react";
 
@@ -21,14 +21,16 @@ export function PipelineHealth() {
     const pullTimeSeriesData = useRxSet(timeSeriesGroupedRx);
     useMemo(pullTimeSeriesData, [pullTimeSeriesData]);
 
-    // Gets
-    const from = useRxValue(fromRx).pipe(Result.getOrThrow);
-    const until = useRxValue(untilRx).pipe(Result.getOrThrow);
+    const updateFrom = useRxSet(fromRx);
+    useMemo(() => updateFrom(new Date("2024-11-1")), [updateFrom]);
 
-    // Suspenses
+    const updateUntil = useRxSet(untilRx);
+    useMemo(() => updateUntil(new Date()), [updateUntil]);
+
+    // Gets
+    const from = useRxSuspenseSuccess(fromRx).value;
+    const until = useRxSuspenseSuccess(untilRx).value;
     const totals = useRxSuspenseSuccess(totalsRx).value;
-    console.log(from);
-    console.log(until);
 
     return (
         <>

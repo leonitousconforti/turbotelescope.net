@@ -32,7 +32,7 @@ const runtime = Rx.runtime(Layer.provideMerge(FetchHttpClient.layer, Logger.mini
 //            Rx Atoms for pipeline health page
 // ------------------------------------------------------------
 
-// Locale tracks the current timezone/locale that the user has selected
+// Locale tracks the current timezone/locale that the user has selected, which is an IANA time zone identifier
 export const localeRx = Rx.fn<string, never, DateTime.TimeZone>(
     (locale: string, _ctx: Rx.Context): Effect.Effect<DateTime.TimeZone, never, never> =>
         Function.pipe(
@@ -55,10 +55,9 @@ export const fromRx = Rx.fn<Date, never, DateTime.Zoned>(
             Effect.flatMap(({ date, locale }) =>
                 DateTime.makeZoned(date, {
                     timeZone: locale,
-                    adjustForTimeZone: true,
+                    adjustForTimeZone: false,
                 })
             ),
-            //Effect.map(Function.compose(DateTime.toEpochMillis, DateTime.unsafeMake)),
             Effect.catchAll(() => new Cause.IllegalArgumentException("Invalid date")),
             Effect.tap(Effect.logDebug),
             Effect.orDie
@@ -66,8 +65,8 @@ export const fromRx = Rx.fn<Date, never, DateTime.Zoned>(
     {
         initialValue: Function.pipe(
             DateTime.nowInCurrentZone,
-            Effect.map(DateTime.subtractDuration(Duration.weeks(2))),
             DateTime.withCurrentZoneLocal,
+            Effect.map(DateTime.subtractDuration(Duration.weeks(2))),
             Effect.runSync
         ),
     }
@@ -78,14 +77,13 @@ export const untilRx = Rx.fn<Date, never, DateTime.Zoned>(
     (date: Date, ctx: Rx.Context): Effect.Effect<DateTime.Zoned, never, never> =>
         Effect.Do.pipe(
             Effect.bind("locale", () => ctx.result(localeRx)),
-            Effect.bind("date", () => Effect.succeed(date)),
+            Effect.let("date", () => date),
             Effect.flatMap(({ date, locale }) =>
                 DateTime.makeZoned(date, {
                     timeZone: locale,
-                    adjustForTimeZone: true,
+                    adjustForTimeZone: false,
                 })
             ),
-            //Effect.map(Function.compose(DateTime.toEpochMillis, DateTime.unsafeMake)),
             Effect.catchAll(() => new Cause.IllegalArgumentException("Invalid date")),
             Effect.tap(Effect.logDebug),
             Effect.orDie
@@ -93,8 +91,8 @@ export const untilRx = Rx.fn<Date, never, DateTime.Zoned>(
     {
         initialValue: Function.pipe(
             DateTime.nowInCurrentZone,
-            Effect.map(DateTime.subtractDuration(Duration.millis(0))),
             DateTime.withCurrentZoneLocal,
+            Effect.map(DateTime.subtractDuration(Duration.millis(0))),
             Effect.runSync
         ),
     }
@@ -117,7 +115,6 @@ export const aggregateByRx = Rx.make<Exclude<DateTime.DateTime.UnitPlural, "mill
 // ------------------------------------------------------------
 
 // Fetches all the rows from the database in the time range
-const Zone2Utc = Function.compose(DateTime.toEpochMillis, DateTime.unsafeMake);
 export const rowsRx: Rx.RxResultFn<void, Array<ResultRow>, never> = runtime.fn(
     (
         _: void,
@@ -126,8 +123,9 @@ export const rowsRx: Rx.RxResultFn<void, Array<ResultRow>, never> = runtime.fn(
         Effect.Do.pipe(
             Effect.bind("from", () => ctx.result(fromRx)),
             Effect.bind("until", () => ctx.result(untilRx)),
-            Effect.bind("request", ({ from, until }) =>
-                Effect.succeed(new RunsInTimeRangeRequest({ from: Zone2Utc(from), until: Zone2Utc(until) }))
+            Effect.let("zoned2Utc", () => Function.compose(DateTime.toEpochMillis, DateTime.unsafeMake)),
+            Effect.bind("request", ({ from, until, zoned2Utc }) =>
+                Effect.succeed(new RunsInTimeRangeRequest({ from: zoned2Utc(from), until: zoned2Utc(until) }))
             ),
             Effect.bind("client", () => rpcClient),
             Effect.flatMap(({ client, request }) => client(request)),
