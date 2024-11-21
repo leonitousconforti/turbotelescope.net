@@ -5,12 +5,14 @@ import {
     Config,
     ConfigError,
     DateTime,
+    Duration,
     Effect,
     Function,
     Layer,
     ParseResult,
     Record,
     Schema,
+    Stream,
     String,
     Tuple,
 } from "effect";
@@ -103,7 +105,27 @@ const make = Effect.gen(function* () {
             )
         );
 
-    return { getDataInRange } as const;
+    const subscribeToDataInRange = (
+        refreshInterval: Duration.DurationInput
+    ): Stream.Stream<
+        Record.ReadonlyRecord<typeof SchemaName.Encoded, Array<ResultRow>>,
+        ParseResult.ParseError | SqlError.SqlError,
+        never
+    > =>
+        Effect.gen(function* () {
+            type TupledFromUntil = [from: DateTime.Utc, until: DateTime.Utc];
+
+            const now = yield* DateTime.now;
+            const applyRefreshInterval = DateTime.addDuration(refreshInterval);
+
+            const initial: TupledFromUntil = Tuple.make(now, applyRefreshInterval(now));
+            const next = ([_, previousNow]: TupledFromUntil): TupledFromUntil =>
+                Tuple.make(previousNow, applyRefreshInterval(previousNow));
+
+            return Stream.iterate(initial, next).pipe(Stream.mapEffect(Function.tupled(getDataInRange)));
+        }).pipe(Stream.unwrap);
+
+    return { getDataInRange, subscribeToDataInRange } as const;
 });
 
 export class Database extends Effect.Service<Database>()("app/Database", {

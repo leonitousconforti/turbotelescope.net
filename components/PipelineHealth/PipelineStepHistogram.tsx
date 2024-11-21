@@ -1,4 +1,4 @@
-import { Array, Record, Schema, Tuple, Function, Option } from "effect";
+import { Array, Function, Option, Record, Schema, Tuple } from "effect";
 import { Bar, BarChart, CartesianGrid, XAxis, YAxis } from "recharts";
 
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";

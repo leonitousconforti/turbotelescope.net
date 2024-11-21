@@ -1,3 +1,4 @@
+import { Rpc } from "@effect/rpc";
 import { DateTime, Effect, Function, Match, Option, ParseResult, Schema } from "effect";
 
 /** @internal */
@@ -23,11 +24,7 @@ export const splitLiteral = <StrInput extends string, Delimiter extends string>(
     delimiter: Delimiter
 ): Split<StrInput, Delimiter> => strInput.split(delimiter) as Split<StrInput, Delimiter>;
 
-/**
- * Schema name for a data entry.
- *
- * @since 2024-10-01
- */
+/** Schema name for a data entry. */
 export class SchemaName extends Schema.transformOrFail(
     Schema.TemplateLiteral(
         Schema.Literal("science_turbo_production_pipeline_", "reference_turbo_production_pipeline_"),
@@ -124,11 +121,7 @@ export class SchemaName extends Schema.transformOrFail(
     }
 ) {}
 
-/**
- * Pipeline step names for lightweight runtime
- *
- * @since 2024-10-01
- */
+/** Pipeline step names for lightweight runtime */
 export class PipelineStepName extends Schema.Literal(
     "Bad pix map generation",
     "Basic data reduction",
@@ -154,11 +147,7 @@ export class PipelineStepName extends Schema.Literal(
     "Create bad pixel mask from raw image"
 ) {}
 
-/**
- * Short pipeline step names for lightweight runtime
- *
- * @since 2024-10-01
- */
+/** Short pipeline step names for lightweight runtime */
 
 export class ShortPipelineName extends Schema.transform(
     PipelineStepName,
@@ -234,11 +223,7 @@ export class ShortPipelineName extends Schema.transform(
     }
 ) {}
 
-/**
- * Schema for Image Status tables
- *
- * @since 2024-10-01
- */
+/** Schema for Image Status tables */
 export class ImageStatusTableRow extends Schema.Class<ImageStatusTableRow>("ImageStatusTableRow")({
     imageId: Schema.Number,
     pipelineStep: PipelineStepName,
@@ -246,11 +231,7 @@ export class ImageStatusTableRow extends Schema.Class<ImageStatusTableRow>("Imag
     completion: Schema.String,
 }) {}
 
-/**
- * Schema for Images Table rows tables
- *
- * @since 2024-10-01
- */
+/** Schema for Images Table rows tables */
 export class ImagesTableRow extends Schema.Class<ImagesTableRow>("ImagesTableRow")({
     imageId: Schema.Number,
     filePath: Schema.String,
@@ -281,6 +262,12 @@ export class RunsInTimeRangeRequest extends Schema.TaggedRequest<RunsInTimeRange
     failure: Schema.Never,
     success: Schema.Record({ key: SchemaName.from, value: Schema.Array(ResultRow) }),
     payload: { from: Schema.DateTimeUtc, until: Schema.DateTimeUtc },
+}) {}
+
+export class SubscribeToRunsRequest extends Rpc.StreamRequest<SubscribeToRunsRequest>()("SubscribeToRunsRequest", {
+    failure: Schema.Never,
+    success: Schema.Record({ key: SchemaName.from, value: Schema.Array(ResultRow) }),
+    payload: { refreshInterval: Schema.DurationFromSelf },
 }) {}
 
 export class VerboseLogRequest extends Schema.TaggedRequest<VerboseLogRequest>()("VerboseLogRequest", {

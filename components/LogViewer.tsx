@@ -4,7 +4,7 @@ import { Result, Rx, useRx } from "@effect-rx/rx-react";
 import { FetchHttpClient, HttpClient, HttpClientError } from "@effect/platform";
 import { Effect, Scope } from "effect";
 
-import { rpcClient } from "@/rpc/client";
+import { rpcClient } from "@/app/api/client";
 import { SchemaName, VerboseLogRequest } from "@/services/Domain";
 import { useMemo } from "react";
 

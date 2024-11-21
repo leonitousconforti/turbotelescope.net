@@ -23,7 +23,7 @@ import {
     Stream,
 } from "effect";
 
-import { rpcClient } from "@/rpc/client";
+import { rpcClient } from "@/app/api/client";
 import { ResultRow, RunsInTimeRangeRequest, SchemaName, ShortPipelineName } from "@/services/Domain";
 
 // Rx runtime
