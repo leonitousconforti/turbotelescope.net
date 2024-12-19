@@ -1,5 +1,6 @@
 import { RpcRouter } from "@effect/rpc";
 import { Chunk, Layer, ManagedRuntime, Stream } from "effect";
+import { NodeFileSystem } from "@effect/platform-node";
 import { NextRequest } from "next/server";
 
 import { Database } from "@/services/Database";
@@ -10,7 +11,7 @@ const router = RpcRouter.make(databaseRouter, verboseLogsRouter);
 export type RpcRouter = typeof router;
 
 const handler = RpcRouter.toHandler(router);
-const runtime = ManagedRuntime.make(Layer.mergeAll(Database.Default, VerboseLogs.Default));
+const runtime = ManagedRuntime.make(Layer.mergeAll(Database.Default, VerboseLogs.Default, NodeFileSystem.layer));
 
 export async function POST(request: NextRequest) {
     const data = await request.json();

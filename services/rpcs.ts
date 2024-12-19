@@ -2,7 +2,12 @@ import { Rpc, RpcRouter } from "@effect/rpc";
 import { Effect, Function, Stream } from "effect";
 
 import { Database } from "@/services/Database";
-import { RunsInTimeRangeRequest, SubscribeToRunsRequest, VerboseLogRequest } from "@/services/Domain";
+import {
+    RunsInTimeRangeRequest,
+    SubscribeToRunsRequest,
+    VerboseLogRequest,
+    VerboseLogURLRequest,
+} from "@/services/Domain";
 import { VerboseLogs } from "@/services/VerboseLogs";
 
 export const databaseRouter = RpcRouter.make(
@@ -24,6 +29,12 @@ export const verboseLogsRouter = RpcRouter.make(
             Effect.map(VerboseLogs, (verboseLogs) => verboseLogs.fetchLog(schemaName, machine)),
             Stream.unwrap,
             Stream.orDie
+        )
+    ),
+    Rpc.effect(VerboseLogURLRequest, ({ machine, schemaName }) =>
+        Function.pipe(
+            Effect.flatMap(VerboseLogs, (verboseLogs) => verboseLogs.getLogURL(schemaName, machine)),
+            Effect.orDie
         )
     )
 );

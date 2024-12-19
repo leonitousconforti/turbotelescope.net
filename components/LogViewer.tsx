@@ -1,11 +1,11 @@
 "use client";
 
-import { Rx, useRxSet, useRxSuspenseSuccess } from "@effect-rx/rx-react";
+import { Result, Rx, useRxSet, useRxSuspenseSuccess } from "@effect-rx/rx-react";
 import { FetchHttpClient, HttpClient, HttpClientError } from "@effect/platform";
-import { Scope, Stream } from "effect";
+import { Effect, Scope, Stream } from "effect";
 
 import { rpcClient } from "@/app/api/client";
-import { SchemaName, VerboseLogRequest } from "@/services/Domain";
+import { SchemaName, VerboseLogRequest, VerboseLogURLRequest } from "@/services/Domain";
 import { useMemo } from "react";
 
 const runtime = Rx.runtime(FetchHttpClient.layer);
@@ -15,7 +15,7 @@ const schemaNameRx = Rx.make<typeof SchemaName.from.Type>(
     "" as `science_turbo_production_pipeline_${number}_${number}_${number}_${number}_${number}_${number}`
 );
 
-const verboseLogRx: Rx.Writable<Rx.PullResult<Uint8Array, never>, void> = runtime.pull(
+const _verboseLogRx: Rx.Writable<Rx.PullResult<Uint8Array, never>, void> = runtime.pull(
     (
         context: Rx.Context
     ): Stream.Stream<Uint8Array, never, HttpClient.HttpClient<HttpClientError.HttpClientError, Scope.Scope>> =>
@@ -27,8 +27,21 @@ const verboseLogRx: Rx.Writable<Rx.PullResult<Uint8Array, never>, void> = runtim
             Stream.flatMap(({ client, request }) => client(request))
         ),
     {
-        disableAccumulation: false,
+        disableAccumulation: true,
     }
+);
+
+const verboseLogURLRx: Rx.Rx<Result.Result<string, never>> = runtime.rx(
+    (
+        context: Rx.Context
+    ): Effect.Effect<string, never, HttpClient.HttpClient<HttpClientError.HttpClientError, Scope.Scope>> =>
+        Effect.Do.pipe(
+            Effect.let("machine", () => context.get(machineRx)),
+            Effect.let("schemaName", () => context.get(schemaNameRx)),
+            Effect.let("request", ({ machine, schemaName }) => new VerboseLogURLRequest({ schemaName, machine })),
+            Effect.bind("client", () => rpcClient),
+            Effect.flatMap(({ client, request }) => client(request))
+        )
 );
 
 export function LogViewer({
@@ -45,9 +58,10 @@ export function LogViewer({
     useMemo(() => setSchemaName(schemaName), [schemaName, setSchemaName]);
 
     // Suspenses
-    const verboseLogs = useRxSuspenseSuccess(verboseLogRx).value;
+    const verboseLogs = useRxSuspenseSuccess(verboseLogURLRx).value;
 
     // Content
-    const all = verboseLogs.items.map((item) => new TextDecoder().decode(item)).join("\n");
-    return <p>{all}</p>;
+    //const all = verboseLogs.items.map((item) => new TextDecoder().decode(item)).join("\n");
+
+    return <p>{verboseLogs}</p>;
 }

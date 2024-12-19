@@ -234,7 +234,20 @@ export class ImageStatusTableRow extends Schema.Class<ImageStatusTableRow>("Imag
 /** Schema for Images Table rows tables */
 export class ImagesTableRow extends Schema.Class<ImagesTableRow>("ImagesTableRow")({
     imageId: Schema.Number,
-    filePath: Schema.String,
+    filePath: Schema.TemplateLiteral(
+        Schema.String,
+        Schema.Literal("telescope_"),
+        Schema.Literal("r", "g"),
+        Schema.Literal("_"),
+        Schema.String,
+        Schema.Literal("_"),
+        Schema.String,
+        Schema.Literal("_"),
+        Schema.Number,
+        Schema.Literal("_"),
+        Schema.String,
+        Schema.Literal(".fits")
+    ),
     objectId: Schema.String,
     ra: Schema.Number,
     dec: Schema.Number,
@@ -273,5 +286,11 @@ export class SubscribeToRunsRequest extends Rpc.StreamRequest<SubscribeToRunsReq
 export class VerboseLogRequest extends Rpc.StreamRequest<VerboseLogRequest>()("VerboseLogRequest", {
     failure: Schema.Never,
     success: Schema.Uint8Array,
+    payload: { schemaName: SchemaName.from, machine: Schema.Literal("tlenaii", "popcorn") },
+}) {}
+
+export class VerboseLogURLRequest extends Schema.TaggedRequest<VerboseLogURLRequest>()("VerboseLogURLRequest", {
+    failure: Schema.Never,
+    success: Schema.String,
     payload: { schemaName: SchemaName.from, machine: Schema.Literal("tlenaii", "popcorn") },
 }) {}

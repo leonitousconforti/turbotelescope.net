@@ -289,7 +289,9 @@ export const timeSeriesGroupedRx: Rx.RxResultFn<
 export const tableDataRx: Rx.Rx<
     Result.Result<
         Array<{
-            file: string;
+            file:
+                | `${string}telescope_g_${string}_${string}_${number}_${string}.fits`
+                | `${string}telescope_r_${string}_${string}_${number}_${string}.fits`;
             status: string;
             run: DateTime.Utc;
             processingTime: number;
@@ -302,7 +304,9 @@ export const tableDataRx: Rx.Rx<
         ctx: Rx.Context
     ): Effect.Effect<
         Array<{
-            file: string;
+            file:
+                | `${string}telescope_g_${string}_${string}_${number}_${string}.fits`
+                | `${string}telescope_r_${string}_${string}_${number}_${string}.fits`;
             status: string;
             run: DateTime.Utc;
             processingTime: number;
